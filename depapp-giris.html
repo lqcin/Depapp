@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Depapp — İşletme Girişi</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+const COLORS = {
+  navy: "#101B3D",
+  navySoft: "#1B2A56",
+  navyLine: "#2B3B6B",
+  cream: "#F6F1E7",
+  paper: "#FFFFFF",
+  amber: "#D98E2B",
+  amberDark: "#B8741E",
+  green: "#3F7A52",
+  inkOnCream: "#241F14",
+  mutedOnCream: "#7A7260",
+  mutedOnNavy: "#A9B0C9",
+};
+
+const TICKER_ITEMS = [
+  { emoji: "🥕", name: "Yeşilova Manav", item: "Domates", dist: "120 m", price: "38 ₺/kg" },
+  { emoji: "🥖", name: "Cihan Fırın", item: "Ekmek", dist: "340 m", price: "12 ₺" },
+  { emoji: "🥩", name: "Kasap Mehmet", item: "Kıyma", dist: "500 m", price: "410 ₺/kg" },
+  { emoji: "🧀", name: "Bakkal Ayşe", item: "Beyaz peynir", dist: "180 m", price: "290 ₺/kg" },
+  { emoji: "🍋", name: "Yeşilova Manav", item: "Limon", dist: "120 m", price: "45 ₺/kg" },
+  { emoji: "🥛", name: "Bakkal Ayşe", item: "Süt 1L", dist: "180 m", price: "34 ₺" },
+];
+
+const BUSINESS_TYPES = ["Market", "Bakkal", "Manav", "Kasap", "Butik"];
+
+function PinBoxes({ value, onChange }) {
+  const digits = value.split("");
+  const refs = React.useRef([]);
+
+  const handleChange = (i, v) => {
+    const clean = v.replace(/[^0-9]/g, "").slice(-1);
+    const next = value.split("");
+    next[i] = clean;
+    const joined = next.join("").slice(0, 4);
+    onChange(joined);
+    if (clean && refs.current[i + 1]) refs.current[i + 1].focus();
+  };
+
+  const handleKeyDown = (i, e) => {
+    if (e.key === "Backspace" && !digits[i] && refs.current[i - 1]) {
+      refs.current[i - 1].focus();
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", gap: "10px" }}>
+      {[0, 1, 2, 3].map((i) => (
+        <input
+          key={i}
+          ref={(el) => (refs.current[i] = el)}
+          value={digits[i] || ""}
+          onChange={(e) => handleChange(i, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          inputMode="numeric"
+          maxLength={1}
+          aria-label={`PIN hane ${i + 1}`}
+          style={{
+            width: "48px",
+            height: "56px",
+            textAlign: "center",
+            fontSize: "22px",
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 600,
+            color: COLORS.inkOnCream,
+            background: COLORS.paper,
+            border: `2px solid ${digits[i] ? COLORS.amber : "#E4DCC8"}`,
+            borderRadius: "10px",
+            outline: "none",
+            transition: "border-color 120ms ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label style={{ display: "block", marginBottom: "18px" }}>
+      <span
+        style={{
+          display: "block",
+          fontFamily: "'Inter', sans-serif",
+          fontSize: "13px",
+          fontWeight: 600,
+          letterSpacing: "0.02em",
+          color: COLORS.mutedOnCream,
+          marginBottom: "7px",
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "13px 14px",
+  fontFamily: "'Inter', sans-serif",
+  fontSize: "15px",
+  color: COLORS.inkOnCream,
+  background: COLORS.paper,
+  border: "2px solid #E4DCC8",
+  borderRadius: "10px",
+  outline: "none",
+};
+
+function DepappBusinessAuth() {
+  const [mode, setMode] = useState("login"); // 'login' | 'register'
+  const [pin, setPin] = useState("");
+  const [regPin, setRegPin] = useState("");
+  const [bizType, setBizType] = useState("Market");
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: COLORS.cream,
+        fontFamily: "'Inter', sans-serif",
+      }}
+      className="md:flex-row"
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+        * { box-sizing: border-box; }
+        .ticker-track {
+          animation: ticker-scroll 14s linear infinite;
+        }
+        @keyframes ticker-scroll {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ticker-track { animation: none; }
+        }
+        .tab-btn { transition: color 150ms ease, background 150ms ease; }
+        .cta-btn { transition: transform 120ms ease, background 150ms ease; }
+        .cta-btn:hover { background: ${COLORS.amberDark}; transform: translateY(-1px); }
+        .chip { transition: background 120ms ease, color 120ms ease, border-color 120ms ease; }
+        input:focus { border-color: ${COLORS.amber} !important; }
+      `}</style>
+
+      {/* LEFT — Brand panel */}
+      <div
+        style={{
+          background: `linear-gradient(180deg, ${COLORS.navy} 0%, ${COLORS.navySoft} 100%)`,
+          color: COLORS.paper,
+          padding: "40px 36px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          position: "relative",
+          overflow: "hidden",
+        }}
+        className="md:w-[46%]"
+      >
+        <div>
+          {/* Wordmark echoing the logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "2px", marginBottom: "28px" }}>
+            <span
+              style={{
+                fontFamily: "'Fraunces', serif",
+                fontWeight: 700,
+                fontSize: "34px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Dep
+            </span>
+            <span
+              style={{
+                fontFamily: "'Fraunces', serif",
+                fontWeight: 700,
+                fontSize: "34px",
+              }}
+            >
+              o
+            </span>
+            <span
+              style={{
+                marginLeft: "8px",
+                background: COLORS.amber,
+                color: COLORS.navy,
+                borderRadius: "999px",
+                padding: "5px 14px 6px",
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 700,
+                fontSize: "15px",
+              }}
+            >
+              app
+            </span>
+          </div>
+
+          <h1
+            style={{
+              fontFamily: "'Fraunces', serif",
+              fontStyle: "italic",
+              fontWeight: 500,
+              fontSize: "27px",
+              lineHeight: 1.3,
+              maxWidth: "360px",
+              margin: "0 0 14px",
+            }}
+          >
+            Mahallenin dijital pazarı.
+          </h1>
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "15px",
+              lineHeight: 1.6,
+              color: COLORS.mutedOnNavy,
+              maxWidth: "340px",
+              margin: 0,
+            }}
+          >
+            Ürünlerini çevrendeki herkese aç. Stok girdikçe komşuların ne
+            aldığını, nerede bulacağını görür.
+          </p>
+        </div>
+
+        {/* Signature element: market ticker board */}
+        <div
+          style={{
+            marginTop: "36px",
+            marginBottom: "36px",
+            border: `1px solid ${COLORS.navyLine}`,
+            borderRadius: "14px",
+            overflow: "hidden",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 16px",
+              borderBottom: `1px solid ${COLORS.navyLine}`,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "11px",
+              letterSpacing: "0.08em",
+              color: COLORS.mutedOnNavy,
+              textTransform: "uppercase",
+            }}
+          >
+            <span>Yakındaki Pazar Panosu</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: COLORS.green,
+                  display: "inline-block",
+                }}
+              />
+              canlı
+            </span>
+          </div>
+          <div style={{ height: "168px", overflow: "hidden", position: "relative" }}>
+            <div className="ticker-track">
+              {[...TICKER_ITEMS, ...TICKER_ITEMS].map((row, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "9px 16px",
+                    borderBottom: `1px solid ${COLORS.navyLine}`,
+                  }}
+                >
+                  <span style={{ fontSize: "18px" }}>{row.emoji}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: COLORS.paper,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {row.item}
+                    </div>
+                    <div style={{ fontSize: "11px", color: COLORS.mutedOnNavy }}>{row.name}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div
+                      style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: COLORS.amber,
+                      }}
+                    >
+                      {row.price}
+                    </div>
+                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: COLORS.mutedOnNavy }}>
+                      {row.dist}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Feature bullets */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {[
+            "Barkod ile saniyeler içinde ürün girişi",
+            "Komisyon yok — sabit aylık ücret",
+            "Konumuna göre otomatik görünürlük",
+          ].map((f) => (
+            <div key={f} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  background: "rgba(217,142,43,0.18)",
+                  color: COLORS.amber,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                ✓
+              </span>
+              <span style={{ fontSize: "13.5px", color: COLORS.mutedOnNavy }}>{f}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT — Form panel */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 24px",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "380px" }}>
+          {/* Tabs */}
+          <div
+            style={{
+              display: "flex",
+              background: "#EDE6D6",
+              borderRadius: "12px",
+              padding: "4px",
+              marginBottom: "30px",
+            }}
+          >
+            {[
+              { key: "login", label: "Giriş" },
+              { key: "register", label: "Kayıt Ol" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                className="tab-btn"
+                onClick={() => setMode(t.key)}
+                style={{
+                  flex: 1,
+                  padding: "10px 0",
+                  border: "none",
+                  borderRadius: "9px",
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  background: mode === t.key ? COLORS.paper : "transparent",
+                  color: mode === t.key ? COLORS.navy : COLORS.mutedOnCream,
+                  boxShadow: mode === t.key ? "0 1px 3px rgba(16,27,61,0.12)" : "none",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {mode === "login" ? (
+            <>
+              <h2
+                style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontWeight: 600,
+                  fontSize: "24px",
+                  color: COLORS.inkOnCream,
+                  margin: "0 0 6px",
+                }}
+              >
+                İşletme girişi
+              </h2>
+              <p style={{ fontSize: "14px", color: COLORS.mutedOnCream, margin: "0 0 26px" }}>
+                Telefon numaran ve PIN'inle devam et.
+              </p>
+
+              <Field label="Telefon numarası">
+                <input type="tel" placeholder="05xx xxx xx xx" style={inputStyle} />
+              </Field>
+
+              <Field label="PIN">
+                <PinBoxes value={pin} onChange={setPin} />
+              </Field>
+
+              <button
+                className="cta-btn"
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  marginTop: "8px",
+                  border: "none",
+                  borderRadius: "10px",
+                  background: COLORS.amber,
+                  color: COLORS.navy,
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 700,
+                  fontSize: "15px",
+                  cursor: "pointer",
+                }}
+              >
+                Giriş yap
+              </button>
+
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "13px",
+                  color: COLORS.mutedOnCream,
+                  marginTop: "18px",
+                }}
+              >
+                Hesabın yok mu?{" "}
+                <span
+                  onClick={() => setMode("register")}
+                  style={{ color: COLORS.amberDark, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Kayıt ol
+                </span>
+              </p>
+            </>
+          ) : (
+            <>
+              <h2
+                style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontWeight: 600,
+                  fontSize: "24px",
+                  color: COLORS.inkOnCream,
+                  margin: "0 0 6px",
+                }}
+              >
+                İşletmeni ekle
+              </h2>
+              <p style={{ fontSize: "14px", color: COLORS.mutedOnCream, margin: "0 0 26px" }}>
+                Birkaç bilgiyle başla, gerisini sonra tamamlarsın.
+              </p>
+
+              <Field label="İşletme adı">
+                <input type="text" placeholder="ör. Yeşilova Manav" style={inputStyle} />
+              </Field>
+
+              <Field label="İşletme türü">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {BUSINESS_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className="chip"
+                      onClick={() => setBizType(t)}
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        fontSize: "13px",
+                        fontFamily: "'Inter', sans-serif",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        border: `1.5px solid ${bizType === t ? COLORS.amber : "#E4DCC8"}`,
+                        background: bizType === t ? "rgba(217,142,43,0.14)" : COLORS.paper,
+                        color: bizType === t ? COLORS.amberDark : COLORS.mutedOnCream,
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Telefon numarası">
+                <input type="tel" placeholder="05xx xxx xx xx" style={inputStyle} />
+              </Field>
+
+              <Field label="PIN oluştur">
+                <PinBoxes value={regPin} onChange={setRegPin} />
+              </Field>
+
+              <button
+                className="cta-btn"
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  marginTop: "8px",
+                  border: "none",
+                  borderRadius: "10px",
+                  background: COLORS.amber,
+                  color: COLORS.navy,
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 700,
+                  fontSize: "15px",
+                  cursor: "pointer",
+                }}
+              >
+                Hesap oluştur
+              </button>
+
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "12.5px",
+                  color: COLORS.mutedOnCream,
+                  marginTop: "16px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Konum ve çalışma saatlerini bir sonraki adımda,
+                <br />
+                ilk ürününü barkod okutarak ekleyeceksin.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<DepappBusinessAuth />);
+</script>
+</body>
+</html>
